@@ -143,7 +143,11 @@ function deleteCat(name){if(name==='其他'){showToast('「其他」不可删');
 function renderCatManager(){var h='';for(var i=0;i<categories.length;i++)h+='<div class="admin-item"><div class="ali">📌 '+categories[i]+'</div><div class="ala"><button class="btn btn-ghost btn-xs" onclick="renameCat(\''+categories[i]+'\')">✏</button><button class="btn btn-ghost btn-xs" onclick="deleteCat(\''+categories[i]+'\')" style="color:var(--accent)">🗑</button></div></div>';h+='<div style="margin-top:6px"><button class="btn btn-ghost btn-xs" onclick="addCategory()">+ 新建分类</button></div>';document.getElementById('catManager').innerHTML=h}
 
 // 初始化
-function doInit(){updateCatSelect();renderSidebar();search();document.getElementById('faqCount').textContent=faqData.length;document.getElementById('searchInput').focus()}
+function doInit(){
+  try{var c=localStorage.getItem('faq_kb');if(c){faqData=JSON.parse(c);for(var i=0;i<faqData.length;i++){if(typeof faqData[i].a==='string')faqData[i].a=[faqData[i].a]}}}catch(e){}
+  try{var cc=localStorage.getItem('faq_cats');if(cc){var tmp=JSON.parse(cc);if(Array.isArray(tmp)&&tmp.length)categories=tmp}}catch(e){}
+  updateCatSelect();renderSidebar();search();document.getElementById('faqCount').textContent=faqData.length;document.getElementById('searchInput').focus()
+}
 doInit();
 window.addEventListener('pageshow',function(e){if(e.persisted)doInit()});
 function openLightbox(s){var lb=document.getElementById('lb');if(!lb){lb=document.createElement('div');lb.id='lb';lb.className='lightbox';lb.innerHTML='<span class="close">&times;</span><img>';lb.onclick=function(e){if(e.target===lb||e.target.className==='close')lb.classList.remove('on')};document.body.appendChild(lb)}lb.querySelector('img').src=s;lb.classList.add('on')}
