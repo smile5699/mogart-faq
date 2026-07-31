@@ -151,6 +151,13 @@ mark{background:#fef3c7;color:var(--text);padding:0 1px;border-radius:2px}
 </div>
 
 <script>
+var _t0 = Date.now();
+window.onerror = function(msg, url, line) {
+  document.body.innerHTML = '<div style="padding:50px;text-align:center;font-family:sans-serif"><h2>JS 错误</h2><pre style="background:#fee;padding:20px;border-radius:8px;margin-top:20px;text-align:left">' + msg + '\n行: ' + line + '</pre></div>';
+};
+console.log('SCRIPT START at', _t0);
+</script>
+<script>
 // 简单测试：弹窗确认JS加载
 console.log('JS loaded');
 
@@ -194,9 +201,9 @@ function catCounts() {
     var c = faqData[i].cat || '其他';
     counts[c] = (counts[c]||0) + 1;
   }
-  var el;
   for (var j=0; j<categories.length; j++) {
-    el = document.getElementById('cnt_'+categories[j]);
+    var safe = categories[j].replace(/[^a-zA-Z0-9\u4e00-\u9fff]/g,'_');
+    var el = document.getElementById('cnt_'+safe);
     if (el) el.textContent = counts[categories[j]] || 0;
   }
 }
@@ -206,18 +213,16 @@ function renderSidebar() {
   var html = '';
   for (var i=0; i<categories.length; i++) {
     var c = categories[i];
-    html += '<div class="cat-item'+(currentCat===c?' active':'')+'" data-cat="'+c+'" id="cat_'+c+'">';
-    html += '<span class="cat-icon">📌</span>'+c;
-    html += '<span class="cat-count" id="cnt_'+c+'">0</span></div>';
+    var safe = c.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    html += '<div class="cat-item'+(currentCat===c?' active':'')+'" data-cat="'+safe+'" id="cat_'+safe.replace(/[^a-zA-Z0-9\u4e00-\u9fff]/g,'_')+'">';
+    html += '<span class="cat-icon">📌</span>'+safe;
+    html += '<span class="cat-count" id="cnt_'+safe.replace(/[^a-zA-Z0-9\u4e00-\u9fff]/g,'_')+'">0</span></div>';
   }
   document.getElementById('sidebarCats').innerHTML = html;
   catCounts();
-  // 绑定点击
   var items = document.getElementById('sidebarCats').getElementsByClassName('cat-item');
   for (var k=0; k<items.length; k++) {
-    items[k].onclick = function() {
-      filterCat(this.getAttribute('data-cat'));
-    };
+    items[k].onclick = function() { filterCat(this.getAttribute('data-cat')); };
   }
 }
 
@@ -521,6 +526,46 @@ function addCategory() {
   showToast('已添加分类：'+name);
 }
 
+function renameCat(oldName) {
+  var n = prompt('重命名分类：', oldName);
+  if (!n || !n.trim() || n.trim()===oldName) return;
+  n = n.trim();
+  for (var i=0; i<categories.length; i++) {
+    if (categories[i] === n) { showToast('名称已存在'); return; }
+  }
+  var idx = categories.indexOf(oldName);
+  if (idx<0) return;
+  categories[idx] = n;
+  localStorage.setItem('faq_cats', JSON.stringify(categories));
+  // 同步更新FAQ中的分类
+  for (var j=0; j<faqData.length; j++) {
+    if (faqData[j].cat === oldName) faqData[j].cat = n;
+  }
+  if (currentCat === oldName) currentCat = n;
+  persist();
+  renderSidebar();
+  updateCatSelect();
+  search();
+  showToast('已重命名');
+}
+
+function deleteCat(name) {
+  if (name === '其他') { showToast('「其他」不可删除'); return; }
+  var cnt = 0;
+  for (var i=0; i<faqData.length; i++) {
+    if ((faqData[i].cat||'其他') === name) cnt++;
+  }
+  if (cnt>0) { showToast('该分类下有'+cnt+'条FAQ，先移走再删'); return; }
+  if (!confirm('删除分类「'+name+'」？')) return;
+  var idx = categories.indexOf(name);
+  if (idx<0) return;
+  categories.splice(idx, 1);
+  localStorage.setItem('faq_cats', JSON.stringify(categories));
+  renderSidebar();
+  updateCatSelect();
+  showToast('已删除');
+}
+
 // ===== 工具 =====
 function openLightbox(src) {
   var lb = document.getElementById('lightbox');
@@ -540,59 +585,47 @@ function showToast(msg) {
 }
 
 // ===== 事件绑定 =====
-document.getElementById('btnAdmin').onclick = function() {
-  document.getElementById('adminPanel').classList.toggle('on');
-  if (document.getElementById('adminPanel').classList.contains('on')) {
-    renderAdminList();
-    if (!replySteps.length) { replySteps = ['']; renderReplyInputs(); }
+// 使用 try-catch 包裹每个绑定，单个失败不影响其他
+(function bindEvents(){
+  function safebind(id, fn) {
+    var el = document.getElementById(id);
+    if (el) { el.onclick = fn; console.log('Bound:', id); }
+    else { console.log('NOT FOUND:', id); }
   }
-};
 
-document.getElementById('btnAddStep').onclick = function() {
-  replySteps.push('');
-  renderReplyInputs();
-};
+  safebind('btnAdmin', function() {
+    document.getElementById('adminPanel').classList.toggle('on');
+    if (document.getElementById('adminPanel').classList.contains('on')) {
+      renderAdminList();
+      if (!replySteps.length) { replySteps = ['']; renderReplyInputs(); }
+    }
+  });
 
-document.getElementById('btnSave').onclick = function() {
-  saveFaq();
-};
+  safebind('btnAddStep', function() { replySteps.push(''); renderReplyInputs(); });
+  safebind('btnSave', function() { saveFaq(); });
+  safebind('btnCancel', function() { cancelEdit(); document.getElementById('adminPanel').classList.remove('on'); });
+  safebind('btnExport', function() { exportAll(); });
+  safebind('btnImport', function() { document.getElementById('importFile').click(); });
 
-document.getElementById('btnCancel').onclick = function() {
-  cancelEdit();
-  document.getElementById('adminPanel').classList.remove('on');
-};
+  var impEl = document.getElementById('importFile');
+  if (impEl) impEl.onchange = function() { importData(); };
 
-document.getElementById('btnExport').onclick = function() {
-  exportAll();
-};
+  safebind('btnNewCat', function() { addCategory(); });
 
-document.getElementById('btnImport').onclick = function() {
-  document.getElementById('importFile').click();
-};
+  var upl = document.getElementById('imgUploadLabel');
+  if (upl) upl.onclick = function() { document.getElementById('imgInput').click(); };
 
-document.getElementById('importFile').onchange = function() {
-  importData();
-};
+  var imi = document.getElementById('imgInput');
+  if (imi) imi.onchange = function() { handleImageSelect(); };
 
-document.getElementById('btnNewCat').onclick = function() {
-  addCategory();
-};
+  var si = document.getElementById('searchInput');
+  if (si) si.oninput = function() { search(); };
 
-document.getElementById('imgUploadLabel').onclick = function() {
-  document.getElementById('imgInput').click();
-};
+  var allBtn = document.querySelector('.sidebar .cat-item[data-cat=\"\"]');
+  if (allBtn) allBtn.onclick = function() { filterCat(''); };
 
-document.getElementById('imgInput').onchange = function() {
-  handleImageSelect();
-};
-
-document.getElementById('searchInput').oninput = function() {
-  search();
-};
-
-// "全部问题"按钮
-var allBtn = document.querySelector('.sidebar .cat-item[data-cat=""]');
-if (allBtn) allBtn.onclick = function() { filterCat(''); };
+  console.log('Events bound');
+})();
 
 // 初始化
 updateCatSelect();
