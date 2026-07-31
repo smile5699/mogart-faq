@@ -143,7 +143,7 @@ mark{background:#fef3c7;color:var(--text);padding:0 1px;border-radius:2px}.no-re
     <div class="p-list" id="pList"></div>
     <div class="admin-panel" id="pAdminPanel">
       <h3 id="pAdminTitle">添加产品</h3>
-      <div class="frow"><input type="text" id="prodName" placeholder="产品名称（必填）"></div>
+      <div class="frow"><input type="text" id="prodName" placeholder="产品名称（必填）"><input type="text" id="prodSpec" placeholder="规格（可选，如：1包/200g）" style="max-width:160px"></div>
       <div style="margin:10px 0"><div style="font-size:13px;font-weight:600;margin-bottom:6px">📱 平台商品ID（可添加多个）</div>
         <div class="id-tags" id="idTags"></div>
         <div class="add-id-row"><input type="text" id="newId" placeholder="输入商品ID，回车添加..." onkeydown="if(event.key==='Enter'){pAddId();event.preventDefault()}"><button class="btn btn-ghost btn-xs" onclick="pAddId()">+ 添加ID</button></div>
@@ -215,9 +215,9 @@ function pRenderTags(){var h='';for(var i=0;i<pIds.length;i++)h+='<div class="id
 function pImgSel(){var f=document.getElementById('tableImg').files[0];if(!f)return;pProcessImg(f);document.getElementById('tableImg').value=''}
 function pProcessImg(f){if(f.size>3*1024*1024){showToast('图片不超3MB');return}var r=new FileReader();r.onload=function(ev){pImg=ev.target.result;pRenderImg()};r.readAsDataURL(f)}
 function pRenderImg(){var el=document.getElementById('pImgPrev');if(!pImg){el.innerHTML='';return}el.innerHTML='<div class="thumb"><img src="'+pImg+'"><button class="rm" onclick="pImg=null;pRenderImg()">&times;</button></div>'}
-function pSave(){var name=document.getElementById('prodName').value.trim(),idx=parseInt(document.getElementById('pEditIdx').value);if(!name){showToast('产品名不能为空');return}if(!pIds.length){showToast('至少添加一个ID');return}var entry={name:name,ids:pIds.slice()};if(pImg)entry.tableImg=pImg;if(idx>=0){if(!pImg&&db[idx].tableImg)entry.tableImg=db[idx].tableImg;db[idx]=entry}else db.push(entry);pPersist();pCancel();pRenderAdmin();showToast(idx>=0?'已更新':'已添加')}
-function pEdit(i){var p=db[i];document.getElementById('prodName').value=p.name;document.getElementById('pEditIdx').value=i;document.getElementById('pAdminTitle').textContent='编辑产品';pIds=(p.ids||[]).slice();pImg=p.tableImg||null;pRenderTags();pRenderImg();document.getElementById('pAdminPanel').classList.add('on')}
-function pCancel(){document.getElementById('prodName').value='';document.getElementById('pEditIdx').value='-1';document.getElementById('pAdminTitle').textContent='添加产品';pIds=[];pImg=null;pRenderTags();pRenderImg()}
+function pSave(){var name=document.getElementById('prodName').value.trim(),spec=document.getElementById('prodSpec').value.trim(),idx=parseInt(document.getElementById('pEditIdx').value);if(!name){showToast('产品名不能为空');return}if(!pIds.length){showToast('至少添加一个ID');return}var entry={name:name,ids:pIds.slice()};if(spec)entry.spec=spec;if(pImg)entry.tableImg=pImg;if(idx>=0){if(!pImg&&db[idx].tableImg)entry.tableImg=db[idx].tableImg;db[idx]=entry}else db.push(entry);pPersist();pCancel();pRenderAdmin();showToast(idx>=0?'已更新':'已添加')}
+function pEdit(i){var p=db[i];document.getElementById('prodName').value=p.name;document.getElementById('prodSpec').value=p.spec||'';document.getElementById('pEditIdx').value=i;document.getElementById('pAdminTitle').textContent='编辑产品';pIds=(p.ids||[]).slice();pImg=p.tableImg||null;pRenderTags();pRenderImg();document.getElementById('pAdminPanel').classList.add('on')}
+function pCancel(){document.getElementById('prodName').value='';document.getElementById('prodSpec').value='';document.getElementById('pEditIdx').value='-1';document.getElementById('pAdminTitle').textContent='添加产品';pIds=[];pImg=null;pRenderTags();pRenderImg()}
 function pDel(i){if(!confirm('删除「'+db[i].name+'」？'))return;db.splice(i,1);pPersist();pRenderAdmin();showToast('已删除')}
 function pCopyImg(i){var p=db[i];if(!p||!p.tableImg){showToast('无图片');return}var img=new Image();img.onload=function(){var c=document.createElement('canvas');c.width=img.width;c.height=img.height;c.getContext('2d').drawImage(img,0,0);c.toBlob(function(b){navigator.clipboard.write([new ClipboardItem({'image/png':b})]).then(function(){showToast('✅ 已复制')}).catch(function(){showToast('复制失败')})},'image/png')};img.onerror=function(){showToast('图片加载失败')};img.src=p.tableImg}
 
