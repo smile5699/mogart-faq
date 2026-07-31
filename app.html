@@ -188,7 +188,7 @@ function editFaq(idx){var it=faqData[idx];editIdx=idx;document.getElementById('f
 function doCancel(){editIdx=-1;document.getElementById('faqQ').value='';document.getElementById('faqNote').value='';document.getElementById('faqCat').value='';document.getElementById('adminTitle').textContent='添加 FAQ';replySteps=[];pendingImages=[];renderReply();renderImgPrev()}
 function deleteFaq(idx){if(!confirm('删除「'+faqData[idx].q+'」？'))return;faqData.splice(idx,1);persist();renderAdminList();renderSidebar();search();showToast('已删除')}
 function handleImg(){processFiles(document.getElementById('imgInput').files);document.getElementById('imgInput').value=''}
-function processFiles(files){for(var i=0;i<files.length;i++){(function(f){if(f.size>5*1024*1024){showToast('图片不超5MB');return}var r=new FileReader();r.onload=function(ev){pendingImages.push(ev.target.result);renderImgPrev()};r.readAsDataURL(f)})(files[i])}}
+function processFiles(files){for(var i=0;i<files.length;i++){(function(f){if(f.size>8*1024*1024){showToast('图片不超8MB');return}var r=new FileReader();r.onload=function(ev){compressImage(ev.target.result,function(data){pendingImages.push(data);renderImgPrev()})};r.readAsDataURL(f)})(files[i])}}
 function renderImgPrev(){var h='';for(var i=0;i<pendingImages.length;i++)h+='<div class="thumb"><img src="'+pendingImages[i]+'"><button class="rm" onclick="pendingImages.splice('+i+',1);renderImgPrev()">&times;</button></div>';document.getElementById('imgPreview').innerHTML=h}
 document.addEventListener('paste',function(e){if(document.getElementById('panelFaq').style.display==='none')return;if(!document.getElementById('adminPanel').classList.contains('on'))return;var fs=[];for(var i=0;i<e.clipboardData.items.length;i++){if(e.clipboardData.items[i].type.indexOf('image/')===0)fs.push(e.clipboardData.items[i].getAsFile())}if(fs.length){e.preventDefault();processFiles(fs)}});
 function updateCatSelect(){var s=document.getElementById('faqCat');s.innerHTML='<option value="">分类</option>';for(var i=0;i<categories.length;i++)s.innerHTML+='<option value="'+categories[i]+'">'+categories[i]+'</option>'}
@@ -212,7 +212,20 @@ function pAddId(){var id=document.getElementById('newId').value.trim();if(!id)re
 function pRemoveId(i){pIds.splice(i,1);pRenderTags()}
 function pRenderTags(){var h='';for(var i=0;i<pIds.length;i++)h+='<div class="id-tag">'+pIds[i]+'<span class="rm" onclick="pRemoveId('+i+')">&times;</span></div>';document.getElementById('idTags').innerHTML=h}
 function pImgSel(){var f=document.getElementById('tableImg').files[0];if(!f)return;pProcessImg(f);document.getElementById('tableImg').value=''}
-function pProcessImg(f){if(f.size>3*1024*1024){showToast('图片不超3MB');return}var r=new FileReader();r.onload=function(ev){pImg=ev.target.result;pRenderImg()};r.readAsDataURL(f)}
+function pProcessImg(f){if(f.size>8*1024*1024){showToast('图片不超8MB');return}var r=new FileReader();r.onload=function(ev){compressImage(ev.target.result,function(data){pImg=data;pRenderImg()})};r.readAsDataURL(f)}
+function compressImage(dataUrl,cb){
+  var img=new Image();
+  img.onload=function(){
+    // 压缩到最长边800px，质量0.7
+    var maxW=800,scale=Math.min(1,maxW/Math.max(img.width,img.height));
+    var w=Math.round(img.width*scale),h=Math.round(img.height*scale);
+    var c=document.createElement('canvas');c.width=w;c.height=h;
+    c.getContext('2d').drawImage(img,0,0,w,h);
+    cb(c.toDataURL('image/jpeg',0.7));
+  };
+  img.onerror=function(){cb(dataUrl)};
+  img.src=dataUrl;
+}
 function pRenderImg(){var el=document.getElementById('pImgPrev');if(!pImg){el.innerHTML='';return}el.innerHTML='<div class="thumb"><img src="'+pImg+'"><button class="rm" onclick="pImg=null;pRenderImg()">&times;</button></div>'}
 function pSave(){var name=document.getElementById('prodName').value.trim(),spec=document.getElementById('prodSpec').value.trim(),idx=parseInt(document.getElementById('pEditIdx').value);if(!name){showToast('产品名不能为空');return}if(!pIds.length){showToast('至少添加一个ID');return}var entry={name:name,ids:pIds.slice()};if(spec)entry.spec=spec;if(pImg)entry.tableImg=pImg;if(idx>=0){if(!pImg&&db[idx].tableImg)entry.tableImg=db[idx].tableImg;db[idx]=entry}else db.push(entry);pPersist();pCancel();pRenderAdmin();showToast(idx>=0?'已更新':'已添加')}
 function pEdit(i){var p=db[i];document.getElementById('prodName').value=p.name;document.getElementById('prodSpec').value=p.spec||'';document.getElementById('pEditIdx').value=i;document.getElementById('pAdminTitle').textContent='编辑产品';pIds=(p.ids||[]).slice();pImg=p.tableImg||null;pRenderTags();pRenderImg();document.getElementById('pAdminPanel').classList.add('on')}
