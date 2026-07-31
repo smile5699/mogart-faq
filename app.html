@@ -143,7 +143,9 @@ function deleteCat(name){if(name==='其他'){showToast('「其他」不可删');
 function renderCatManager(){var h='';for(var i=0;i<categories.length;i++)h+='<div class="admin-item"><div class="ali">📌 '+categories[i]+'</div><div class="ala"><button class="btn btn-ghost btn-xs" onclick="renameCat(\''+categories[i]+'\')">✏</button><button class="btn btn-ghost btn-xs" onclick="deleteCat(\''+categories[i]+'\')" style="color:var(--accent)">🗑</button></div></div>';h+='<div style="margin-top:6px"><button class="btn btn-ghost btn-xs" onclick="addCategory()">+ 新建分类</button></div>';document.getElementById('catManager').innerHTML=h}
 
 // 初始化
-updateCatSelect();renderSidebar();search();document.getElementById('faqCount').textContent=faqData.length;document.getElementById('searchInput').focus();
+function doInit(){updateCatSelect();renderSidebar();search();document.getElementById('faqCount').textContent=faqData.length;document.getElementById('searchInput').focus()}
+doInit();
+window.addEventListener('pageshow',function(e){if(e.persisted)doInit()});
 function openLightbox(s){var lb=document.getElementById('lb');if(!lb){lb=document.createElement('div');lb.id='lb';lb.className='lightbox';lb.innerHTML='<span class="close">&times;</span><img>';lb.onclick=function(e){if(e.target===lb||e.target.className==='close')lb.classList.remove('on')};document.body.appendChild(lb)}lb.querySelector('img').src=s;lb.classList.add('on')}
 function showToast(m){var t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(function(){t.remove()},2000)}
 </script>
