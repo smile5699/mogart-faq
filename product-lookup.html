@@ -222,7 +222,15 @@ function pDel(i){if(!confirm('删除「'+db[i].name+'」？'))return;db.splice(i
 function pCopyImg(i){var p=db[i];if(!p||!p.tableImg){showToast('无图片');return}var img=new Image();img.onload=function(){var c=document.createElement('canvas');c.width=img.width;c.height=img.height;c.getContext('2d').drawImage(img,0,0);c.toBlob(function(b){navigator.clipboard.write([new ClipboardItem({'image/png':b})]).then(function(){showToast('✅ 已复制')}).catch(function(){showToast('复制失败')})},'image/png')};img.onerror=function(){showToast('图片加载失败')};img.src=p.tableImg}
 
 // ===== 导出导入（合并） =====
-function exportAll(){var p=JSON.parse(localStorage.getItem('product_id_db_v2')||'[]'),all={faq:faqData,products:p,categories:categories};var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(all,null,2)],{type:'application/json'}));a.download='摩岛知识库.json';a.click();showToast('已导出：'+faqData.length+'条FAQ + '+p.length+'款产品')}
+function exportAll(){
+  // 从 localStorage 读取最新数据
+  try{var c=localStorage.getItem('faq_kb');if(c)faqData=JSON.parse(c)}catch(e){}
+  try{var cc=localStorage.getItem('faq_cats');if(cc){var t2=JSON.parse(cc);if(Array.isArray(t2)&&t2.length)categories=t2}}catch(e){}
+  var p=[];try{p=JSON.parse(localStorage.getItem('product_id_db_v2')||'[]')}catch(e){}
+  var all={exported:new Date().toISOString().slice(0,10),faq:faqData,products:p,categories:categories};
+  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(all,null,2)],{type:'application/json'}));a.download='摩岛知识库_'+new Date().toISOString().slice(0,10)+'.json';a.click();
+  showToast('✅ 已导出：'+faqData.length+'条话术 + '+p.length+'款产品配料表 + '+categories.length+'个分类');
+}
 function importData(){var f=document.getElementById('importFile').files[0];if(!f)return;var r=new FileReader();r.onload=function(ev){try{var d=JSON.parse(ev.target.result),faq=[],pr=null,cat=null;if(d.faq){faq=d.faq;pr=d.products;cat=d.categories}else if(Array.isArray(d))faq=d;else throw new Error('');for(var i=0;i<faq.length;i++)if(typeof faq[i].a==='string')faq[i].a=[faq[i].a];if(!confirm('导入 '+faq.length+' 条FAQ'+(cat?' + '+cat.length+'个分类':'')+(pr?' + '+pr.length+' 款产品':'')+'（覆盖），确定？'))return;faqData=faq;persist();if(pr)localStorage.setItem('product_id_db_v2',JSON.stringify(pr));if(cat&&Array.isArray(cat)&&cat.length){categories=cat;localStorage.setItem('faq_cats',JSON.stringify(categories));updateCatSelect();renderSidebar()}db=JSON.parse(localStorage.getItem('product_id_db_v2')||'[]');renderAdminList();renderCatManager();pRenderList();search();showToast('已导入')}catch(e){showToast('格式错误')}};r.readAsText(f);document.getElementById('importFile').value=''}
 
 // ===== 工具 =====
