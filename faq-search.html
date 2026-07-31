@@ -142,7 +142,7 @@ mark{background:#fef3c7;color:var(--text);padding:0 1px;border-radius:2px}
 <div class="layout">
   <div class="sidebar" id="sidebar">
     <div class="cat-title">问题分类</div>
-    <div class="cat-item active" onclick="filterCat('')" data-cat="">
+    <div class="cat-item active" data-cat="">
       <span class="cat-icon">📋</span>全部问题<span class="cat-count" id="cntAll">0</span>
     </div>
     <div id="sidebarCats"></div>
@@ -220,6 +220,8 @@ var currentCat='';
   try{var c=localStorage.getItem(STORAGE_KEY);if(c){faqData=JSON.parse(c);faqData.forEach(function(item){if(typeof item.a==='string')item.a=[item.a];if(!item.a||!item.a.length)item.a=[''];})}}catch(e){}
   if(!faqData||!faqData.length){faqData=BUILTIN_DATA.slice();localStorage.setItem(STORAGE_KEY,JSON.stringify(faqData))}
   updateCatSelect();renderSidebar();
+  // Fix sidebar click handlers
+  document.querySelectorAll('.sidebar .cat-item').forEach(function(el){el.addEventListener('click',function(){filterCat(this.getAttribute('data-cat')||'')})});
   renderAll(faqData);
   document.getElementById('searchStats').textContent='共 '+faqData.length+' 条常见问题';
   document.getElementById('faqCount').textContent=faqData.length;
@@ -238,8 +240,12 @@ function sanitizeId(cat){return cat.replace(/[^a-zA-Z0-9\u4e00-\u9fff]/g,'_')}
 
 function renderSidebar(){
   var cats=getCategories(),html='';
-  cats.forEach(function(cat){html+='<div class="cat-item'+(currentCat===cat?' active':'')+'" onclick="filterCat(\''+cat.replace(/'/g,\"\\\\'\")+'\')" data-cat="'+cat+'"><span class="cat-icon">📌</span>'+cat+'<span class="cat-count" id="cnt_'+sanitizeId(cat)+'">0</span></div>'});
-  document.getElementById('sidebarCats').innerHTML=html;updateCatCounts();
+  cats.forEach(function(cat,i){html+='<div class="cat-item'+(currentCat===cat?' active':'')+'" data-cat="'+cat+'" data-idx="'+i+'"><span class="cat-icon">📌</span>'+cat+'<span class="cat-count" id="cnt_'+sanitizeId(cat)+'">0</span></div>'});
+  document.getElementById('sidebarCats').innerHTML=html;
+  // Attach click handlers
+  var items=document.querySelectorAll('#sidebarCats .cat-item');
+  items.forEach(function(el){el.addEventListener('click',function(){filterCat(this.getAttribute('data-cat'))})});
+  updateCatCounts();
 }
 function updateCatCounts(){
   var cats={};faqData.forEach(function(item){var c=item.cat||'其他';cats[c]=(cats[c]||0)+1});
@@ -256,8 +262,17 @@ function renameCategory(old){var n=prompt('重命名「'+old+'」为：',old);if
   if(currentCat===old)currentCat=n;renderSidebar();updateCatSelect();renderCatManager();doSearch();showToast('已重命名')}
 function deleteCategory(name){if(name==='其他'){showToast('「其他」不可删除');return}var cnt=faqData.filter(function(item){return(item.cat||'其他')===name}).length;if(cnt>0){showToast('该分类下还有'+cnt+'条FAQ，先移走再删');return}if(!confirm('删除分类「'+name+'」？'))return;var cats=getCategories();cats.splice(cats.indexOf(name),1);saveCategories(cats);renderSidebar();updateCatSelect();renderCatManager();showToast('已删除')}
 function renderCatManager(){
-  document.getElementById('catManager').innerHTML=getCategories().map(function(cat){return'<div class="admin-item"><div class="ai-l"><span>📌 '+cat+'</span></div><div class="ai-a"><button class="btn btn-ghost btn-xs" onclick="renameCategory(\''+cat.replace(/'/g,\"\\\\'\")+'\')">✏重命名</button><button class="btn btn-ghost btn-xs" onclick="deleteCategory(\''+cat.replace(/'/g,\"\\\\'\")+'\')" style="color:var(--accent)">🗑</button></div></div>'}).join('');
+  var html='',cats=getCategories();
+  cats.forEach(function(cat,i){html+='<div class="admin-item"><div class="ai-l"><span>📌 '+cat+'</span></div><div class="ai-a"><button class="btn btn-ghost btn-xs" data-action="rename" data-cat="'+cat+'">✏重命名</button><button class="btn btn-ghost btn-xs" data-action="delete" data-cat="'+cat+'" style="color:var(--accent)">🗑</button></div></div>'});
+  document.getElementById('catManager').innerHTML=html;
   document.getElementById('catManager').innerHTML+='<div style="margin-top:6px"><button class="btn btn-ghost btn-xs" onclick="addCategory()">+ 新建分类</button></div>';
+  // Fix button handlers via delegation
+  document.getElementById('catManager').addEventListener('click',function(e){
+    var btn=e.target.closest('button');if(!btn)return;
+    var cat=btn.getAttribute('data-cat');
+    if(btn.getAttribute('data-action')==='rename')renameCategory(cat);
+    if(btn.getAttribute('data-action')==='delete')deleteCategory(cat);
+  });
 }
 
 function filterCat(cat){
