@@ -94,6 +94,7 @@ mark{background:#fef3c7;color:var(--text);padding:0 1px;border-radius:2px}.no-re
     <button class="nav-btn tab active" id="tabFaq" onclick="switchTab('faq')">📋 知识库</button>
     <button class="nav-btn tab" id="tabProd" onclick="switchTab('prod')">📦 查配料表</button>
     <span class="sep"></span>
+    <button class="nav-btn" onclick="toggleAdmin()">➕ 新增话术</button>
     <button class="nav-btn" onclick="exportAll()">📥 导出</button>
     <button class="nav-btn" onclick="document.getElementById('importFile').click()">📤 导入</button>
     <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData()">
@@ -135,6 +136,7 @@ mark{background:#fef3c7;color:var(--text);padding:0 1px;border-radius:2px}.no-re
     <div class="p-search">
       <h2>输入商品ID查询配料表</h2><p>多个平台、不同ID，同一款产品自动匹配同一张配料表</p>
       <div class="p-row"><input type="text" id="idInput" placeholder="输入商品ID..." oninput="pAuto()"><button onclick="pSearch()">🔍 查询</button></div>
+      <div style="margin-top:10px"><button class="btn btn-ghost btn-xs" onclick="pAdmin()">➕ 管理产品/配料表</button></div>
     </div>
     <div id="pResult"></div>
     <div class="p-list" id="pList"></div>
