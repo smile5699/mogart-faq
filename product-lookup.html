@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>摩岛 · 商品ID查配料表</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#f7f8fa;--card:#fff;--text:#1a1a2e;--sub:#6b7280;--accent:#C19C4F;--accent-light:#faf3e0;--border:#e5e7eb;--shadow:0 1px 3px rgba(0,0,0,.06);--radius:10px}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.navbar{background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.navbar-inner{max-width:820px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:10px}
+.brand .logo{width:34px;height:34px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:16px}
+.brand .name{font-size:17px;font-weight:700;color:var(--text)}
+.brand .sub{font-size:12px;color:var(--sub);font-weight:400}
+.nav-links{display:flex;gap:6px;align-items:center}
+.nav-btn{padding:7px 14px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s;text-decoration:none;display:flex;align-items:center;gap:4px}
+.nav-btn.dim{background:transparent;color:var(--sub);border:1px solid transparent}
+.nav-btn.dim:hover{background:#f3f4f6;color:var(--text)}
+.container{max-width:740px;margin:0 auto;padding:24px 20px}
+.search-hero{text-align:center;padding:20px 0}
+.search-hero h2{font-size:22px;margin-bottom:4px}
+.search-hero p{font-size:14px;color:var(--sub);margin-bottom:16px}
+.search-row{display:flex;max-width:460px;margin:0 auto}
+.search-row input{flex:1;padding:13px 18px;font-size:17px;border:2px solid var(--border);border-right:none;border-radius:var(--radius) 0 0 var(--radius);outline:none;text-align:center;letter-spacing:1px;background:#fff}
+.search-row input:focus{border-color:var(--accent)}
+.search-row button{padding:13px 24px;background:var(--accent);color:#fff;border:none;border-radius:0 var(--radius) var(--radius) 0;font-size:16px;cursor:pointer;font-weight:500}
+.search-row button:hover{opacity:.9}
+.result-area{margin-top:16px}
+.result-card{background:#fff;border-radius:var(--radius);padding:20px 24px;box-shadow:var(--shadow);border:1px solid var(--border);text-align:center;margin-bottom:10px}
+.result-card .rid{font-size:12px;color:var(--sub);margin-bottom:2px;font-family:monospace}
+.result-card .rp{font-size:18px;font-weight:700;margin-bottom:10px}
+.result-card .ids{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;margin-bottom:12px}
+.result-card .ids span{font-size:11px;padding:3px 10px;background:#f3f4f6;border-radius:12px;color:var(--sub);font-family:monospace}
+.result-card .ids span.match{background:var(--accent-light);color:var(--accent);font-weight:600}
+.result-card .timg{max-width:280px;border-radius:8px;border:1px solid var(--border);cursor:pointer;margin-top:8px}
+.not-found{text-align:center;padding:40px;color:var(--sub)}
+.prod-list{margin-top:24px}
+.prod-list h3{font-size:14px;font-weight:600;color:var(--sub);margin-bottom:8px}
+.prod-item{background:#fff;border-radius:8px;padding:10px 14px;margin-bottom:6px;box-shadow:var(--shadow);cursor:pointer;display:flex;align-items:center;gap:10px;border:1px solid var(--border);transition:all .15s}
+.prod-item:hover{border-color:var(--accent)}
+.prod-item .pi-img{width:42px;height:42px;border-radius:6px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;background:#f3f4f6}
+.prod-item .pi-info{flex:1;min-width:0}
+.prod-item .pi-name{font-weight:600;font-size:14px}
+.prod-item .pi-ids{font-size:11px;color:var(--sub);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.admin-panel{display:none;background:#fff;border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);border:1px solid var(--border);margin-top:16px}
+.admin-panel.on{display:block}
+.admin-panel h3{font-size:16px;margin-bottom:14px}
+.form-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px}
+.form-row input{flex:1;min-width:120px;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;outline:none;background:#fff}
+.form-row input:focus{border-color:var(--accent)}
+.ids-section{margin:10px 0}
+.ids-section label{font-size:13px;font-weight:600;display:block;margin-bottom:6px}
+.id-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.id-tag{display:flex;align-items:center;gap:4px;padding:4px 10px;background:var(--accent-light);border:1px solid var(--accent);border-radius:6px;font-size:13px;font-family:monospace}
+.id-tag .rm{cursor:pointer;font-size:16px;line-height:1;color:var(--accent);font-weight:700}
+.add-id-row{display:flex;gap:6px}
+.add-id-row input{flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;outline:none;max-width:200px;background:#fff}
+.add-id-row input:focus{border-color:var(--accent)}
+.image-upload-area{border:2px dashed var(--border);border-radius:10px;padding:18px;text-align:center;cursor:pointer;color:var(--sub);font-size:14px;margin-bottom:10px;transition:all .15s}
+.image-upload-area:hover{border-color:var(--accent);background:var(--accent-light);color:var(--accent)}
+.image-upload-area input{display:none}
+.admin-list{margin-top:16px;max-height:400px;overflow-y:auto}
+.admin-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);gap:10px;font-size:13px}
+.admin-item .ai-l{flex:1;min-width:0}
+.admin-item .ai-n{font-weight:600}
+.admin-item .ai-i{font-size:12px;color:var(--sub);margin-top:2px;font-family:monospace}
+.admin-item .ai-a{display:flex;gap:4px;flex-shrink:0}
+.actions{display:flex;gap:8px;margin-top:16px;align-items:center}
+.btn{padding:7px 15px;border:none;border-radius:7px;font-size:13px;cursor:pointer;font-weight:500;transition:all .15s;display:flex;align-items:center;gap:5px}
+.btn-red{background:var(--accent);color:#fff}
+.btn-red:hover{opacity:.9}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-ghost:hover{background:var(--bg)}
+.btn-xs{padding:4px 10px;font-size:12px}
+.hint{font-size:12px;color:var(--sub);margin-top:10px}
+.lightbox{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:9999;align-items:center;justify-content:center;cursor:pointer}
+.lightbox.on{display:flex}.lightbox img{max-width:90vw;max-height:90vh;border-radius:10px}
+.lightbox .close{position:absolute;top:20px;right:20px;color:#fff;font-size:32px;cursor:pointer;width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.15);border-radius:50%}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#fff;padding:10px 24px;border-radius:8px;font-size:14px;z-index:1999;animation:fi .2s;pointer-events:none}
+@keyframes fi{from{opacity:0;transform:translateX(-50%) translateY(-8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@media(max-width:600px){.container{padding:16px 12px}.navbar-inner{padding:10px 14px}.search-row{flex-direction:column}.search-row input{border-radius:var(--radius);border-right:2px solid var(--border);margin-bottom:8px;text-align:left;letter-spacing:0}.search-row button{border-radius:var(--radius);width:100%}}
+</style>
+</head>
+<body>
+
+<div class="navbar">
+  <div class="navbar-inner">
+    <div class="brand">
+      <img src="mogart-logo.jpg" alt="Mogart" style="width:42px;height:42px;border-radius:50%;object-fit:cover;border:1px solid var(--border)">
+      <div><div class="name">摩岛 · 查配料表</div><div class="sub">Product ID → Ingredient List</div></div>
+    </div>
+    <div class="nav-links">
+      <a href="faq-search.html" class="nav-btn dim">📋 知识库</a>
+      <button class="nav-btn dim" onclick="exportAll()">📥 合并导出</button>
+      <button class="nav-btn dim" onclick="document.getElementById('impFile').click()">📤 合并导入</button>
+      <input type="file" id="impFile" accept=".json" style="display:none" onchange="importData(event)">
+      <button class="nav-btn dim" onclick="toggleAdmin()">+ 管理</button>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="search-hero">
+    <h2>输入商品ID查询配料表</h2>
+    <p>多个平台、不同ID，同一款产品自动匹配同一张配料表</p>
+    <div class="search-row">
+      <input type="text" id="idInput" placeholder="输入商品ID..." oninput="autoSearch()" autofocus>
+      <button onclick="doSearch()">🔍 查询</button>
+    </div>
+  </div>
+
+  <div class="result-area" id="resultArea"></div>
+  <div class="prod-list" id="prodList"></div>
+
+  <div class="admin-panel" id="adminPanel">
+    <h3 id="adminTitle">添加产品</h3>
+    <div class="form-row">
+      <input type="text" id="prodName" placeholder="产品名称（必填）">
+      <input type="text" id="prodSpec" placeholder="规格（可选）" style="max-width:150px">
+      <input type="text" id="prodCat" placeholder="分类（可选）" style="max-width:120px">
+    </div>
+    <div class="ids-section">
+      <label>📱 平台商品ID（可添加多平台ID）</label>
+      <div class="id-tags" id="idTags"></div>
+      <div class="add-id-row">
+        <input type="text" id="newId" placeholder="输入商品ID..." onkeydown="if(event.key==='Enter'){addId();event.preventDefault()}">
+        <button class="btn btn-ghost btn-xs" onclick="addId()">+ 添加</button>
+      </div>
+    </div>
+    <div class="image-upload-area" onclick="document.getElementById('tableImg').click()"
+      ondragover="event.preventDefault()" ondrop="handleDrop(event)">
+      <p>📷 上传配料表图片（可选，点击 / Ctrl+V / 拖拽）</p>
+      <input type="file" id="tableImg" accept="image/*" onchange="handleImgSelect(event)">
+    </div>
+    <div id="imgPrev" style="margin-bottom:10px"></div>
+    <input type="hidden" id="editIdx" value="-1">
+    <button class="btn btn-red" onclick="saveProduct()">💾 保存</button>
+    <button class="btn btn-ghost" onclick="cancelEdit()" style="margin-left:8px">取消</button>
+    <div class="admin-list" id="adminList"></div>
+    <div class="actions">
+      <button class="btn btn-ghost btn-xs" onclick="exportAll()">📥 合并导出</button>
+      <span style="font-size:12px;color:var(--sub)">共 <span id="totalCount">0</span> 款产品</span>
+    </div>
+    <div class="hint">💡 更新流程：导出 JSON → 发客服 → 客服导入 → 数据同步</div>
+  </div>
+</div>
+
+<script>
+var STORAGE_KEY='product_id_db_v2';
+var db=[];
+var pendingIds=[];
+var pendingImg=null;
+
+(function init(){
+  try{var c=localStorage.getItem(STORAGE_KEY);if(c)db=JSON.parse(c);}catch(e){}
+  renderProdList();
+  document.getElementById('totalCount').textContent=db.length;
+})();
+
+function persist(){
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(db));
+  document.getElementById('totalCount').textContent=db.length;
+  renderProdList();
+}
+
+function doSearch(){
+  var q=document.getElementById('idInput').value.trim();
+  var area=document.getElementById('resultArea');
+  if(!q){area.innerHTML='';return;}
+  var exact=[],fuzzy=[];
+  for(var i=0;i<db.length;i++){
+    var p=db[i];
+    (p.ids||[]).forEach(function(id){
+      if(id===q){
+        if(!exact.find(function(x){return x.p===p}))exact.push({p:p,matched:id});
+      }else if(id.indexOf(q)>=0){
+        if(!fuzzy.find(function(x){return x.p===p}))fuzzy.push({p:p,matched:id});
+      }
+    });
+  }
+  var all=exact.concat(fuzzy);
+  if(!all.length){
+    area.innerHTML='<div class="not-found"><div style="font-size:24px;font-weight:700;margin-bottom:8px">'+q+'</div><p>未找到此ID</p><p style="font-size:13px;color:#aaa;margin-top:4px">请在管理中添加</p></div>';
+    return;
+  }
+  area.innerHTML=all.map(function(x){
+    var isExact=x.matched===q;
+    var p=x.p;
+    var idsHtml=(p.ids||[]).map(function(id){return '<span class="'+(id===x.matched?'match':'')+'">'+id+'</span>';}).join('');
+    var imgHtml='';
+    if(p.tableImg){
+      var i=db.indexOf(p);
+      imgHtml='<div><img class="timg" src="'+p.tableImg+'" onclick="openLightbox(this.src)"><div style="margin-top:8px"><button class="btn btn-red btn-xs" onclick="copyImg('+i+')">📋 复制配料表</button></div></div>';
+    }else{
+      imgHtml='<p style="color:var(--sub)">暂无配料表</p>';
+    }
+    return '<div class="result-card"><div class="rid">匹配ID: <b>'+x.matched+'</b></div><div class="rp">📦 '+p.name+(p.spec?'（'+p.spec+'）':'')+'</div><div class="ids">'+idsHtml+'</div>'+imgHtml+'</div>';
+  }).join('');
+}
+
+function autoSearch(){
+  var v=document.getElementById('idInput').value.trim();
+  if(v.length>=3)doSearch();
+  else document.getElementById('resultArea').innerHTML='';
+}
+
+function renderProdList(){
+  var el=document.getElementById('prodList');
+  if(!db.length){el.innerHTML='';return;}
+  var html='<h3>已录入 '+db.length+' 款产品</h3>';
+  for(var i=0;i<db.length;i++){
+    var p=db[i];
+    html+='<div class="prod-item" onclick="document.getElementById(\'idInput\').value=\''+(p.ids||[])[0]+'\';doSearch()">';
+    html+=p.tableImg?'<img class="pi-img" src="'+p.tableImg+'">':'<div class="pi-img" style="display:flex;align-items:center;justify-content:center;font-size:18px">📦</div>';
+    html+='<div class="pi-info"><div class="pi-name">'+p.name+(p.spec?'（'+p.spec+'）':'')+(p.cat?' · '+p.cat:'')+'</div><div class="pi-ids">ID: '+(p.ids||[]).join(' / ')+'</div></div></div>';
+  }
+  el.innerHTML=html;
+}
+
+function toggleAdmin(){
+  var p=document.getElementById('adminPanel');
+  p.classList.toggle('on');
+  if(p.classList.contains('on'))renderAdminList();
+}
+
+function renderAdminList(){
+  var el=document.getElementById('adminList');
+  if(!db.length){el.innerHTML='<p style="color:#aaa;padding:20px;text-align:center">暂无产品</p>';return;}
+  var html='';
+  for(var i=0;i<db.length;i++){
+    var p=db[i];
+    html+='<div class="admin-item"><div class="ai-l"><div class="ai-n">'+p.name+(p.spec?'（'+p.spec+'）':'')+(p.tableImg?' 📷':'')+'</div><div class="ai-i">ID: '+(p.ids||[]).join(' / ')+'</div></div><div class="ai-a"><button class="btn btn-ghost btn-xs" onclick="editProduct('+i+')">✏</button><button class="btn btn-ghost btn-xs" onclick="deleteProduct('+i+')" style="color:var(--accent)">🗑</button></div></div>';
+  }
+  el.innerHTML=html;
+}
+
+function addId(){
+  var id=document.getElementById('newId').value.trim();
+  if(!id)return;
+  if(pendingIds.indexOf(id)>=0){showToast('ID已存在');return;}
+  pendingIds.push(id);
+  renderIdTags();
+  document.getElementById('newId').value='';
+}
+
+function removeId(i){pendingIds.splice(i,1);renderIdTags();}
+
+function renderIdTags(){
+  var html='';
+  for(var i=0;i<pendingIds.length;i++){
+    html+='<div class="id-tag">'+pendingIds[i]+'<span class="rm" onclick="removeId('+i+')">&times;</span></div>';
+  }
+  document.getElementById('idTags').innerHTML=html;
+}
+
+function handleImgSelect(e){
+  if(!e.target.files[0])return;
+  processImg(e.target.files[0]);
+  e.target.value='';
+}
+
+function handleDrop(e){
+  e.preventDefault();
+  if(e.dataTransfer.files[0]&&e.dataTransfer.files[0].type.startsWith('image/'))
+    processImg(e.dataTransfer.files[0]);
+}
+
+function processImg(f){
+  if(f.size>3*1024*1024){showToast('图片不超3MB');return;}
+  var r=new FileReader();
+  r.onload=function(ev){pendingImg=ev.target.result;renderImgPrev();};
+  r.readAsDataURL(f);
+}
+
+function renderImgPrev(){
+  var el=document.getElementById('imgPrev');
+  if(!pendingImg){el.innerHTML='';return;}
+  el.innerHTML='<div style="position:relative;width:90px;height:90px;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb;display:inline-block"><img src="'+pendingImg+'" style="width:100%;height:100%;object-fit:cover"><button onclick="pendingImg=null;renderImgPrev()" style="position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;border:none;cursor:pointer;font-size:12px">&times;</button></div>';
+}
+
+function saveProduct(){
+  var name=document.getElementById('prodName').value.trim();
+  var spec=document.getElementById('prodSpec').value.trim();
+  var cat=document.getElementById('prodCat').value.trim();
+  var idx=parseInt(document.getElementById('editIdx').value);
+  if(!name){showToast('产品名不能为空');return;}
+  if(!pendingIds.length){showToast('至少添加一个ID');return;}
+  var entry={name:name,ids:pendingIds.slice()};
+  if(spec)entry.spec=spec;
+  if(cat)entry.cat=cat;
+  if(pendingImg)entry.tableImg=pendingImg;
+  if(idx>=0){
+    if(!pendingImg&&db[idx].tableImg)entry.tableImg=db[idx].tableImg;
+    db[idx]=entry;
+  }else{
+    db.push(entry);
+  }
+  persist();cancelEdit();renderAdminList();
+  showToast(idx>=0?'已更新':'已添加');
+}
+
+function editProduct(i){
+  var p=db[i];
+  document.getElementById('prodName').value=p.name;
+  document.getElementById('prodSpec').value=p.spec||'';
+  document.getElementById('prodCat').value=p.cat||'';
+  document.getElementById('editIdx').value=i;
+  document.getElementById('adminTitle').textContent='编辑产品';
+  pendingIds=(p.ids||[]).slice();
+  pendingImg=p.tableImg||null;
+  renderIdTags();renderImgPrev();
+}
+
+function cancelEdit(){
+  document.getElementById('prodName').value='';
+  document.getElementById('prodSpec').value='';
+  document.getElementById('prodCat').value='';
+  document.getElementById('editIdx').value='-1';
+  document.getElementById('adminTitle').textContent='添加产品';
+  pendingIds=[];pendingImg=null;
+  renderIdTags();renderImgPrev();
+}
+
+function deleteProduct(i){
+  if(!confirm('删除「'+db[i].name+'」？'))return;
+  db.splice(i,1);persist();renderAdminList();showToast('已删除');
+}
+
+function copyImg(i){
+  var p=db[i];
+  if(!p||!p.tableImg){showToast('无图片');return;}
+  var img=new Image();
+  img.onload=function(){
+    var c=document.createElement('canvas');
+    c.width=img.width;c.height=img.height;
+    c.getContext('2d').drawImage(img,0,0);
+    c.toBlob(function(b){
+      navigator.clipboard.write([new ClipboardItem({'image/png':b})]).then(function(){
+        showToast('✅ 已复制，直接粘贴');
+      }).catch(function(){showToast('复制失败');});
+    },'image/png');
+  };
+  img.onerror=function(){showToast('图片加载失败');};
+  img.src=p.tableImg;
+}
+
+function exportAll(){
+  var faq=JSON.parse(localStorage.getItem('faq_kb')||'[]');
+  var all={exported:new Date().toISOString().slice(0,19),faq:faq,products:db};
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(all,null,2)],{type:'application/json'}));
+  a.download='摩岛知识库_全部_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+  showToast('已导出：'+faq.length+'条FAQ + '+db.length+'款产品');
+}
+
+function importData(e){
+  var f=e.target.files[0];if(!f)return;
+  var r=new FileReader();
+  r.onload=function(ev){
+    try{
+      var d=JSON.parse(ev.target.result);
+      var prods=[],faq=null;
+      if(d.products){prods=d.products;faq=d.faq;}
+      else if(Array.isArray(d)){prods=d;}
+      else{throw new Error('');}
+      var msg='导入 '+prods.length+' 款产品配料表';
+      if(faq)msg+=' + '+faq.length+' 条FAQ';
+      msg+='（覆盖），确定吗？';
+      if(!confirm(msg))return;
+      db=prods;persist();
+      if(faq){localStorage.setItem('faq_kb',JSON.stringify(faq));}
+      renderAdminList();
+      showToast('✅ 已导入'+(faq?'：'+faq.length+'条FAQ + '+prods.length+'款产品':''));
+    }catch(err){showToast('格式错误');}
+  };
+  r.readAsText(f);e.target.value='';
+}
+
+function openLightbox(src){
+  var lb=document.getElementById('lightbox');
+  if(!lb){
+    lb=document.createElement('div');lb.id='lightbox';lb.className='lightbox';
+    lb.innerHTML='<span class="close">&times;</span><img>';
+    lb.onclick=function(e){if(e.target===lb||e.target.className==='close')lb.classList.remove('on');};
+    document.body.appendChild(lb);
+  }
+  lb.querySelector('img').src=src;lb.classList.add('on');
+}
+
+document.addEventListener('paste',function(e){
+  if(!document.getElementById('adminPanel').classList.contains('on'))return;
+  for(var i=0;i<e.clipboardData.items.length;i++){
+    if(e.clipboardData.items[i].type.indexOf('image/')===0){
+      e.preventDefault();processImg(e.clipboardData.items[i].getAsFile());showToast('已粘贴');return;
+    }
+  }
+});
+
+function showToast(msg){
+  var t=document.createElement('div');t.className='toast';t.textContent=msg;
+  document.body.appendChild(t);setTimeout(function(){t.remove();},2000);
+}
+</script>
+</body>
+</html>
