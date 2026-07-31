@@ -144,32 +144,9 @@ mark{background:#fef3c7;color:var(--text);padding:0 1px;border-radius:2px}
     <div class="cat-item active" onclick="filterCat('')" data-cat="">
       <span class="cat-icon">📋</span>全部问题<span class="cat-count" id="cntAll">0</span>
     </div>
-    <div class="cat-item" onclick="filterCat('售前咨询')" data-cat="售前咨询">
-      <span class="cat-icon">💬</span>售前咨询<span class="cat-count" id="cntPre">0</span>
-    </div>
-    <div class="cat-item" onclick="filterCat('售后维权')" data-cat="售后维权">
-      <span class="cat-icon">🔧</span>售后维权<span class="cat-count" id="cntAfter">0</span>
-    </div>
-    <div class="cat-item" onclick="filterCat('物流快递')" data-cat="物流快递">
-      <span class="cat-icon">📦</span>物流快递<span class="cat-count" id="cntShip">0</span>
-    </div>
-    <div class="cat-item" onclick="filterCat('破损问题')" data-cat="破损问题">
-      <span class="cat-icon">⚠️</span>破损问题<span class="cat-count" id="cntDamage">0</span>
-    </div>
-    <div class="cat-item" onclick="filterCat('退换货')" data-cat="退换货">
-      <span class="cat-icon">🔄</span>退换货<span class="cat-count" id="cntReturn">0</span>
-    </div>
-    <div class="cat-item" onclick="filterCat('订单问题')" data-cat="订单问题">
-      <span class="cat-icon">🧾</span>订单问题<span class="cat-count" id="cntOrder">0</span>
-    </div>
-    <div class="cat-item" onclick="filterCat('支付问题')" data-cat="支付问题">
-      <span class="cat-icon">💳</span>支付问题<span class="cat-count" id="cntPay">0</span>
-    </div>
-    <div class="cat-item" onclick="filterCat('产品相关')" data-cat="产品相关">
-      <span class="cat-icon">🏷️</span>产品相关<span class="cat-count" id="cntProd">0</span>
-    </div>
-    <div class="cat-item" onclick="filterCat('其他')" data-cat="其他">
-      <span class="cat-icon">📌</span>其他<span class="cat-count" id="cntOther">0</span>
+    <div id="sidebarCats"></div>
+    <div style="padding:12px 16px">
+      <button class="btn btn-ghost btn-xs" onclick="toggleAdmin();addCategory()" style="width:100%">+ 新建分类</button>
     </div>
   </div>
   <div class="main">
@@ -214,6 +191,10 @@ mark{background:#fef3c7;color:var(--text);padding:0 1px;border-radius:2px}
         <button class="btn btn-ghost btn-xs" onclick="exportAll()">📥 导出备份</button>
         <span style="font-size:12px;color:var(--sub)">共 <span id="faqCount">0</span> 条</span>
       </div>
+      <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
+        <h3 style="font-size:14px;margin-bottom:10px">📂 管理分类</h3>
+        <div id="catManager"></div>
+      </div>
       <div class="hint">💡 导出 JSON → 发客服 → 客服导入 → 数据同步</div>
     </div>
   </div>
@@ -237,28 +218,52 @@ var currentCat='';
 (function init(){
   try{var c=localStorage.getItem(STORAGE_KEY);if(c){faqData=JSON.parse(c);faqData.forEach(function(item){if(typeof item.a==='string')item.a=[item.a];if(!item.a||!item.a.length)item.a=[''];})}}catch(e){}
   if(!faqData||!faqData.length){faqData=BUILTIN_DATA.slice();localStorage.setItem(STORAGE_KEY,JSON.stringify(faqData))}
-  updateCatCounts();
+  updateCatSelect();renderSidebar();
   renderAll(faqData);
   document.getElementById('searchStats').textContent='共 '+faqData.length+' 条常见问题';
   document.getElementById('faqCount').textContent=faqData.length;
   document.getElementById('searchInput').focus();
 })();
 
-function persist(){localStorage.setItem(STORAGE_KEY,JSON.stringify(faqData));document.getElementById('faqCount').textContent=faqData.length;updateCatCounts()}
+function persist(){localStorage.setItem(STORAGE_KEY,JSON.stringify(faqData));document.getElementById('faqCount').textContent=faqData.length;updateCatCounts();renderSidebar()}
 
-// ========== 分类筛选 ==========
+// ========== 分类管理 ==========
+var CATS_KEY='faq_cats';var cachedCategories=null;
+var DEFAULT_CATS=['售前咨询','售后维权','物流快递','破损问题','退换货','订单问题','支付问题','产品相关','其他'];
+
+function getCategories(){if(cachedCategories)return cachedCategories;try{var c=JSON.parse(localStorage.getItem(CATS_KEY));if(c&&Array.isArray(c)&&c.length)return cachedCategories=c}catch(e){}return cachedCategories=DEFAULT_CATS.slice()}
+function saveCategories(cats){cachedCategories=cats;localStorage.setItem(CATS_KEY,JSON.stringify(cats))}
+function sanitizeId(cat){return cat.replace(/[^a-zA-Z0-9\u4e00-\u9fff]/g,'_')}
+
+function renderSidebar(){
+  var cats=getCategories(),html='';
+  cats.forEach(function(cat){html+='<div class="cat-item'+(currentCat===cat?' active':'')+'" onclick="filterCat(\''+cat.replace(/'/g,\"\\\\'\")+'\')" data-cat="'+cat+'"><span class="cat-icon">📌</span>'+cat+'<span class="cat-count" id="cnt_'+sanitizeId(cat)+'">0</span></div>'});
+  document.getElementById('sidebarCats').innerHTML=html;updateCatCounts();
+}
 function updateCatCounts(){
   var cats={};faqData.forEach(function(item){var c=item.cat||'其他';cats[c]=(cats[c]||0)+1});
   document.getElementById('cntAll').textContent=faqData.length;
-  ['cntPre','cntAfter','cntShip','cntDamage','cntReturn','cntOrder','cntPay','cntProd','cntOther'].forEach(function(id){document.getElementById(id).textContent='0'});
-  var map={售前咨询:'cntPre',售后维权:'cntAfter',物流快递:'cntShip',破损问题:'cntDamage',退换货:'cntReturn',订单问题:'cntOrder',支付问题:'cntPay',产品相关:'cntProd',其他:'cntOther'};
-  for(var k in cats){if(map[k])document.getElementById(map[k]).textContent=cats[k]}
+  getCategories().forEach(function(cat){var el=document.getElementById('cnt_'+sanitizeId(cat));if(el)el.textContent=cats[cat]||0});
+}
+function updateCatSelect(){
+  var sel=document.getElementById('faqCat'),cats=getCategories();
+  sel.innerHTML='<option value="">分类</option>'+cats.map(function(c){return'<option value="'+c+'">'+c+'</option>'}).join('');
+}
+function addCategory(name){var n=(name||prompt('新建分类名称：')).trim();if(!n)return;var cats=getCategories();if(cats.indexOf(n)>=0){showToast('分类已存在');return}cats.push(n);saveCategories(cats);renderSidebar();updateCatSelect();renderCatManager();showToast('已添加')}
+function renameCategory(old){var n=prompt('重命名「'+old+'」为：',old);if(!n||n===old)return;var cats=getCategories(),idx=cats.indexOf(old);if(idx<0)return;if(cats.indexOf(n)>=0){showToast('名称已存在');return}
+  cats[idx]=n;saveCategories(cats);faqData.forEach(function(item){if(item.cat===old)item.cat=n});persist();
+  if(currentCat===old)currentCat=n;renderSidebar();updateCatSelect();renderCatManager();doSearch();showToast('已重命名')}
+function deleteCategory(name){if(name==='其他'){showToast('「其他」不可删除');return}var cnt=faqData.filter(function(item){return(item.cat||'其他')===name}).length;if(cnt>0){showToast('该分类下还有'+cnt+'条FAQ，先移走再删');return}if(!confirm('删除分类「'+name+'」？'))return;var cats=getCategories();cats.splice(cats.indexOf(name),1);saveCategories(cats);renderSidebar();updateCatSelect();renderCatManager();showToast('已删除')}
+function renderCatManager(){
+  document.getElementById('catManager').innerHTML=getCategories().map(function(cat){return'<div class="admin-item"><div class="ai-l"><span>📌 '+cat+'</span></div><div class="ai-a"><button class="btn btn-ghost btn-xs" onclick="renameCategory(\''+cat.replace(/'/g,\"\\\\'\")+'\')">✏重命名</button><button class="btn btn-ghost btn-xs" onclick="deleteCategory(\''+cat.replace(/'/g,\"\\\\'\")+'\')" style="color:var(--accent)">🗑</button></div></div>'}).join('');
+  document.getElementById('catManager').innerHTML+='<div style="margin-top:6px"><button class="btn btn-ghost btn-xs" onclick="addCategory()">+ 新建分类</button></div>';
 }
 
 function filterCat(cat){
   currentCat=cat;
-  var items=document.querySelectorAll('.sidebar .cat-item');
+  var items=document.querySelectorAll('#sidebarCats .cat-item');
   items.forEach(function(el){el.classList.toggle('active',el.getAttribute('data-cat')===cat)});
+  document.querySelector('.sidebar .cat-item[data-cat=\"\"]').classList.toggle('active',cat==='');
   doSearch();
 }
 
@@ -337,7 +342,7 @@ function copyFaq(idx){
 
 // ========== 管理 ==========
 var replySteps=[''];var pendingImages=[];
-function toggleAdmin(){document.getElementById('adminPanel').classList.toggle('on');if(document.getElementById('adminPanel').classList.contains('on'))renderAdminList()}
+function toggleAdmin(){document.getElementById('adminPanel').classList.toggle('on');if(document.getElementById('adminPanel').classList.contains('on')){renderAdminList();renderCatManager()}}
 function renderAdminList(){
   var el=document.getElementById('adminList');
   if(!faqData.length){el.innerHTML='<p style="color:#aaa;padding:20px;text-align:center">暂无条目</p>';return}
